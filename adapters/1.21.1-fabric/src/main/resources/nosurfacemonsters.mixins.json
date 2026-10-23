@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "cn.wanstu.nosurfacemonsters.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "GameRulesInvoker",
+    "GameRulesBooleanValueInvoker",
+    "SpawnPlacementsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

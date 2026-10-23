@@ -1,0 +1,31 @@
+plugins {
+    id 'fabric-loom' version '1.7.4'
+    id 'java'
+}
+
+group = 'cn.wanstu.nosurfacemonsters'
+version = project.mod_version
+
+repositories {
+    maven { url 'https://maven.fabricmc.net/' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:' + project.minecraft_version
+    mappings loom.officialMojangMappings()
+    modImplementation 'net.fabricmc:fabric-loader:' + project.loader_version
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+base.archivesName = 'no-surface-monsters-1.21.1-fabric'
+
+sourceSets.main.java.srcDir '../../common/src/main/java'
+
+tasks.named('processResources', ProcessResources) {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand(version: project.version)
+    }
+}
