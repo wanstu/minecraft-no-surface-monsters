@@ -21,6 +21,8 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 base.archivesName = 'no-surface-monsters'
 
+sourceSets.main.java.srcDir 'common/src/main/java'
+
 tasks.named('processResources', ProcessResources) {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {

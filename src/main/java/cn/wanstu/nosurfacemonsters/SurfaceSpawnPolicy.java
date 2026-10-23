@@ -1,5 +1,6 @@
 package cn.wanstu.nosurfacemonsters;
 
+import cn.wanstu.nosurfacemonsters.common.SurfaceSpawnRules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -10,8 +11,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public final class SurfaceSpawnPolicy {
-    private static final int MIN_UNDERGROUND_DEPTH = 8;
-
     private SurfaceSpawnPolicy() {
     }
 
@@ -31,29 +30,20 @@ public final class SurfaceSpawnPolicy {
         }
 
         BlockState floor = level.getBlockState(pos.below());
-
-        if (floor.is(BlockTags.GRASS_BLOCKS)
+        boolean obviousSurfaceFloor = floor.is(BlockTags.GRASS_BLOCKS)
             || floor.is(BlockTags.LEAVES)
-            || floor.is(BlockTags.LOGS)) {
-            return true;
-        }
+            || floor.is(BlockTags.LOGS);
 
-        if (!isUndergroundCompatibleFloor(floor)) {
-            return true;
-        }
-
-        if (level.canSeeSky(pos)) {
-            return true;
-        }
-
-        int surfaceY = level.getHeight(
-            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-            pos.getX(),
-            pos.getZ()
+        return SurfaceSpawnRules.isSurface(
+            obviousSurfaceFloor,
+            isUndergroundCompatibleFloor(floor),
+            level.canSeeSky(pos),
+            () -> level.getHeight(
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                pos.getX(),
+                pos.getZ()
+            ) - pos.getY()
         );
-        int undergroundDepth = surfaceY - pos.getY();
-
-        return undergroundDepth < MIN_UNDERGROUND_DEPTH;
     }
 
     private static boolean isUndergroundCompatibleFloor(BlockState floor) {
@@ -68,10 +58,5 @@ public final class SurfaceSpawnPolicy {
             || floor.is(Blocks.CLAY)
             || floor.is(Blocks.DRIPSTONE_BLOCK)
             || floor.is(Blocks.TUFF);
-    }
-
-    public static boolean shouldDisableSurfaceCustomSpawner(ServerLevel level) {
-        return level.dimension().equals(Level.OVERWORLD)
-            && level.getGameRules().get(NoSurfaceMonstersGameRules.NO_SURFACE_MONSTERS);
     }
 }
