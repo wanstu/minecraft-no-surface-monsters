@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "nosurfacemonsters",
+  "version": "${version}",
+  "name": "No Surface Monsters",
+  "description": "Prevents ordinary hostile mobs from naturally spawning on the Overworld surface.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "cn.wanstu.nosurfacemonsters.NoSurfaceMonstersMod"
+    ]
+  },
+  "mixins": [
+    "nosurfacemonsters.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.4",
+    "fabric-game-rule-api-v1": "*",
+    "minecraft": "26.1.2",
+    "java": ">=25"
+  }
+}
