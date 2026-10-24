@@ -14,7 +14,6 @@ repositories {
 dependencies {
     minecraft 'com.mojang:minecraft:' + project.minecraft_version
     implementation 'net.fabricmc:fabric-loader:' + project.loader_version
-    implementation 'net.fabricmc.fabric-api:fabric-api:' + project.fabric_api_version
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
@@ -22,6 +21,7 @@ tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 base.archivesName = 'no-surface-monsters'
 
 sourceSets.main.java.srcDir 'common/src/main/java'
+sourceSets.main.java.srcDir 'v26-common/src/main/java'
 
 tasks.named('processResources', ProcessResources) {
     inputs.property 'version', project.version

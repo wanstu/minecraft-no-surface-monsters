@@ -3,6 +3,7 @@
   "package": "cn.wanstu.nosurfacemonsters.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "GameRulesInvoker",
     "SpawnPlacementsMixin"
   ],
   "injectors": {
