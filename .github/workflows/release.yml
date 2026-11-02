@@ -1,0 +1,201 @@
+name: No Surface Monsters CI and Release
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-1-21-1:
+    name: Verify Minecraft 1.21.1 / ${{ matrix.loader }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - loader: fabric
+            module: adapters/1.21.1-fabric
+            metadata: fabric.mod.json
+          - loader: neoforge
+            module: adapters/1.21.1-neoforge
+            metadata: META-INF/neoforge.mods.toml
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build adapter
+        shell: pwsh
+        env:
+          MODULE: ${{ matrix.module }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $gradlew = Join-Path $env:MODULE 'gradlew.bat'
+          if (-not (Test-Path $gradlew)) {
+            throw "Missing Gradle wrapper: $gradlew"
+          }
+          & $gradlew -p $env:MODULE clean check build --no-daemon
+          if ($LASTEXITCODE -ne 0) {
+            throw "Build failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Verify built jar
+        shell: pwsh
+        env:
+          MODULE: ${{ matrix.module }}
+          REQUIRED_METADATA: ${{ matrix.metadata }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $jars = @(Get-ChildItem (Join-Path $env:MODULE 'build/libs') -Filter '*.jar' |
+            Where-Object { $_.Name -notmatch '(sources|javadoc|dev|shadow)' })
+          if ($jars.Count -ne 1) {
+            throw "Expected exactly one distributable jar, got $($jars.Count): $($jars.Name)"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($jars[0].FullName)
+          try {
+            $entries = @($zip.Entries | ForEach-Object FullName)
+            foreach ($required in @(
+              $env:REQUIRED_METADATA,
+              'nosurfacemonsters.mixins.json',
+              'cn/wanstu/nosurfacemonsters/SurfaceSpawnPolicy.class',
+              'cn/wanstu/nosurfacemonsters/common/SurfaceSpawnRules.class'
+            )) {
+              if ($required -notin $entries) {
+                throw "Built jar lacks required entry: $required"
+              }
+            }
+          } finally {
+            $zip.Dispose()
+          }
+
+  release-neoforge-1-21-1:
+    name: Release Minecraft 1.21.1 / NeoForge
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify-1-21-1
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate release tag
+        id: release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REF_NAME -notmatch '^v([0-9]+\.[0-9]+\.[0-9]+(?:-rc\.[0-9]+)?)$') {
+            throw "Release tag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N"
+          }
+
+          $version = $Matches[1]
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "filename=NoSurfaceMonsters-$version-mc1.21.1-neoforge.jar" >> $env:GITHUB_OUTPUT
+
+      - name: Verify tag points to current master
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git fetch origin master --no-tags
+          $tagCommit = git rev-parse HEAD
+          $masterCommit = git rev-parse FETCH_HEAD
+          if ($tagCommit -ne $masterCommit) {
+            throw "Release tag must point to current master."
+          }
+
+      - name: Build NeoForge release artifact
+        shell: pwsh
+        env:
+          MOD_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $module = 'adapters/1.21.1-neoforge'
+          & "$module/gradlew.bat" -p $module clean check build --no-daemon "-Pmod_version=$env:MOD_VERSION"
+          if ($LASTEXITCODE -ne 0) {
+            throw "NeoForge release build failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Stage and verify release artifact
+        shell: pwsh
+        env:
+          FILE: ${{ steps.release.outputs.filename }}
+          MOD_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $module = 'adapters/1.21.1-neoforge'
+          $jars = @(Get-ChildItem "$module/build/libs" -Filter '*.jar' |
+            Where-Object { $_.Name -notmatch '(sources|javadoc|dev|shadow)' })
+          if ($jars.Count -ne 1) {
+            throw "Expected exactly one release jar, got $($jars.Count): $($jars.Name)"
+          }
+
+          New-Item -ItemType Directory -Force release | Out-Null
+          $target = Join-Path 'release' $env:FILE
+          Copy-Item $jars[0].FullName $target -Force
+
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $target))
+          try {
+            $entries = @($zip.Entries | ForEach-Object FullName)
+            foreach ($required in @(
+              'META-INF/neoforge.mods.toml',
+              'nosurfacemonsters.mixins.json',
+              'cn/wanstu/nosurfacemonsters/NoSurfaceMonstersNeoForgeMod.class',
+              'cn/wanstu/nosurfacemonsters/SurfaceSpawnPolicy.class',
+              'cn/wanstu/nosurfacemonsters/common/SurfaceSpawnRules.class'
+            )) {
+              if ($required -notin $entries) {
+                throw "Release jar lacks required entry: $required"
+              }
+            }
+
+            $metadataEntry = $zip.GetEntry('META-INF/neoforge.mods.toml')
+            $reader = [System.IO.StreamReader]::new($metadataEntry.Open())
+            try {
+              $metadata = $reader.ReadToEnd()
+              if ($metadata -notmatch ('version="' + [regex]::Escape($env:MOD_VERSION) + '"')) {
+                throw "Release metadata does not contain version $env:MOD_VERSION"
+              }
+              if ($metadata -notmatch 'versionRange="\[1\.21\.1\]"') {
+                throw "Release metadata does not target Minecraft 1.21.1"
+              }
+            } finally {
+              $reader.Dispose()
+            }
+          } finally {
+            $zip.Dispose()
+          }
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ steps.release.outputs.filename }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $asset = Join-Path 'release' $env:FILE
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME $asset --clobber
+          } else {
+            gh release create $env:GITHUB_REF_NAME $asset --title $env:GITHUB_REF_NAME --generate-notes
+          }

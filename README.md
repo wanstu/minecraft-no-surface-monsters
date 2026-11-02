@@ -1,15 +1,21 @@
 # No Surface Monsters
 
-A small Fabric mod that prevents ordinary hostile mobs from naturally spawning on the Overworld surface while preserving underground spawning and vanilla mechanic-driven spawns.
+A small Minecraft mod that prevents ordinary hostile mobs from naturally spawning on the Overworld surface while preserving underground spawning and vanilla mechanic-driven spawns.
 
-## Supported Fabric baselines
+## Supported targets
+
+### Fabric
 
 - Minecraft 26.3
 - Minecraft 26.2
 - Minecraft 26.1.2
 - Minecraft 1.21.1
 
-The mod depends on Fabric Loader only. It does not require Fabric API or another gameplay/configuration mod.
+### NeoForge
+
+- Minecraft 1.21.1
+
+No Surface Monsters does not require Fabric API or another gameplay/configuration mod.
 
 ## Behavior
 
@@ -28,8 +34,13 @@ The implementation does not scan entities or vertical block columns. It hooks Mi
 
 ## Architecture
 
-- `common`: loader/version-neutral surface classification algorithm.
-- `v26-common`: shared vanilla GameRule registration for Minecraft 26.x.
-- `adapters/*`: only Minecraft-version API/mapping differences.
+The project follows the same layered approach used by GeoWorld:
 
-Fabric Loader is used only as the required mod loader / entrypoint platform.
+- `common`: loader/version-neutral surface classification algorithm.
+- `v1_21_1-common`: Minecraft 1.21.1 GameRule, spawn policy and Mixins shared by Fabric and NeoForge.
+- `v26-common`: shared Minecraft 26.x logic.
+- `adapters/1.21.1-fabric`: thin Fabric entrypoint and Fabric metadata.
+- `adapters/1.21.1-neoforge`: thin NeoForge entrypoint and NeoForge metadata.
+- other `adapters/*`: Minecraft-version/loader-specific shells.
+
+Minecraft 1.21.1 targets Java 21. The NeoForge 1.21.1 adapter is built against NeoForge 21.1.211 and declares NeoForge 21.1.211 or newer for Minecraft 1.21.1.

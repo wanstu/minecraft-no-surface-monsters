@@ -22,6 +22,8 @@ tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 base.archivesName = 'no-surface-monsters-1.21.1-fabric'
 
 sourceSets.main.java.srcDir '../../common/src/main/java'
+sourceSets.main.java.srcDir '../../v1_21_1-common/src/main/java'
+sourceSets.main.resources.srcDir '../../v1_21_1-common/src/main/resources'
 
 tasks.named('processResources', ProcessResources) {
     inputs.property 'version', project.version
