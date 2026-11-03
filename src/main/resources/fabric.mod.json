@@ -4,6 +4,7 @@
   "version": "${version}",
   "name": "No Surface Monsters",
   "description": "Prevents hostile mobs from naturally spawning on the Overworld surface.",
+  "license": "BSD-3-Clause",
   "environment": "*",
   "entrypoints": {
     "main": [
