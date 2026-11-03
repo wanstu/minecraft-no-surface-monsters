@@ -55,7 +55,7 @@ The project keeps gameplay rules separate from Minecraft-version and loader adap
 
 GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
 
-A release tag in the form `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N` publishes one GitHub Release containing all 10 distributable JARs.
+A release tag in the form `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N` publishes one GitHub Release containing all 10 distributable JARs, then publishes each Minecraft/loader target as a separate Modrinth version.
 
 Each CI target verifies that its JAR contains loader metadata, the loader entrypoint, the spawn policy, the Mixin configuration, and the shared surface-rule implementation.
 
@@ -122,7 +122,7 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 
 GitHub Actions 会在 Push 和 Pull Request 时自动构建并验证全部 10 个 Minecraft / Loader 目标。
 
-创建 `vMAJOR.MINOR.PATCH` 或 `vMAJOR.MINOR.PATCH-rc.N` 格式的 tag 后，会自动创建包含全部 10 个可发布 JAR 的 GitHub Release。
+创建 `vMAJOR.MINOR.PATCH` 或 `vMAJOR.MINOR.PATCH-rc.N` 格式的 tag 后，会自动创建包含全部 10 个可发布 JAR 的 GitHub Release，并将每个 Minecraft / Loader 目标作为独立版本发布到 Modrinth。
 
 每个 CI 构建目标都会检查 JAR 中是否包含 Loader metadata、Loader 入口类、刷怪策略、Mixin 配置以及公共地表规则实现。
 

@@ -220,3 +220,96 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" release/*.jar --title "$GITHUB_REF_NAME" --generate-notes
           fi
+
+  modrinth:
+    name: Publish Modrinth ${{ matrix.minecraft }} / ${{ matrix.loader }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft: '1.21.1'
+            loader: fabric
+            loader_name: Fabric
+            java: '21'
+          - minecraft: '1.21.1'
+            loader: neoforge
+            loader_name: NeoForge
+            java: '21'
+          - minecraft: '1.21.11'
+            loader: fabric
+            loader_name: Fabric
+            java: '21'
+          - minecraft: '1.21.11'
+            loader: neoforge
+            loader_name: NeoForge
+            java: '21'
+          - minecraft: '26.1.2'
+            loader: fabric
+            loader_name: Fabric
+            java: '25'
+          - minecraft: '26.1.2'
+            loader: neoforge
+            loader_name: NeoForge
+            java: '25'
+          - minecraft: '26.2'
+            loader: fabric
+            loader_name: Fabric
+            java: '25'
+          - minecraft: '26.2'
+            loader: neoforge
+            loader_name: NeoForge
+            java: '25'
+          - minecraft: '26.3'
+            loader: fabric
+            loader_name: Fabric
+            java: '25'
+          - minecraft: '26.3'
+            loader: neoforge
+            loader_name: NeoForge
+            java: '25'
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nosurfacemonsters-${{ matrix.minecraft }}-${{ matrix.loader }}
+          path: modrinth
+
+      - name: Resolve Modrinth version metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${GITHUB_REF_NAME#v}"
+          type="release"
+          if [[ "$base" == *-rc.* ]]; then
+            type="beta"
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "version=$base-mc${{ matrix.minecraft }}-${{ matrix.loader }}" >> "$GITHUB_OUTPUT"
+          echo "type=$type" >> "$GITHUB_OUTPUT"
+
+      - name: Read GitHub release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json body --jq '.body' > release-notes.md
+
+      - name: Publish to Modrinth
+        uses: Kira-NT/mc-publish@v3.3.1
+        with:
+          modrinth-id: ${{ secrets.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: modrinth/*.jar
+          name: No Surface Monsters ${{ steps.meta.outputs.base }} - ${{ matrix.loader_name }} ${{ matrix.minecraft }}
+          version: ${{ steps.meta.outputs.version }}
+          version-type: ${{ steps.meta.outputs.type }}
+          changelog-file: release-notes.md
+          loaders: ${{ matrix.loader }}
+          game-versions: ${{ matrix.minecraft }}
+          java: ${{ matrix.java }}
+          fail-mode: fail
