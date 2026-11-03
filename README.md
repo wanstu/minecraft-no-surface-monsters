@@ -4,16 +4,13 @@ A small Minecraft mod that prevents ordinary hostile mobs from naturally spawnin
 
 ## Supported targets
 
-### Fabric
-
-- Minecraft 26.3
-- Minecraft 26.2
-- Minecraft 26.1.2
-- Minecraft 1.21.1
-
-### NeoForge
-
-- Minecraft 1.21.1
+| Minecraft | Fabric | NeoForge |
+| --- | --- | --- |
+| 1.21.1 | Yes | Yes |
+| 1.21.11 | Yes | Yes |
+| 26.1.2 | Yes | Yes |
+| 26.2 | Yes | Yes |
+| 26.3 | Yes | Yes |
 
 No Surface Monsters does not require Fabric API or another gameplay/configuration mod.
 
@@ -34,13 +31,26 @@ The implementation does not scan entities or vertical block columns. It hooks Mi
 
 ## Architecture
 
-The project follows the same layered approach used by GeoWorld:
+The project keeps gameplay rules separate from Minecraft-version and loader adapters:
 
 - `common`: loader/version-neutral surface classification algorithm.
-- `v1_21_1-common`: Minecraft 1.21.1 GameRule, spawn policy and Mixins shared by Fabric and NeoForge.
-- `v26-common`: shared Minecraft 26.x logic.
-- `adapters/1.21.1-fabric`: thin Fabric entrypoint and Fabric metadata.
-- `adapters/1.21.1-neoforge`: thin NeoForge entrypoint and NeoForge metadata.
-- other `adapters/*`: Minecraft-version/loader-specific shells.
+- `v1_21_1-common`: Minecraft 1.21.1 shared logic for Fabric and NeoForge.
+- `v1_21_11-common`: Minecraft 1.21.11 shared logic after the game-rule/spawn API changes.
+- `v26-common`: shared Minecraft 26.x game-rule/resources layer.
+- `v26_1-common`, `v26_2-common`, `v26_3-common`: version-specific Minecraft API compatibility layers.
+- `adapters/*-fabric`: thin Fabric entrypoints and metadata.
+- `adapters/*-neoforge`: thin NeoForge entrypoints and metadata.
 
-Minecraft 1.21.1 targets Java 21. The NeoForge 1.21.1 adapter is built against NeoForge 21.1.211 and declares NeoForge 21.1.211 or newer for Minecraft 1.21.1.
+## CI and releases
+
+GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
+
+A release tag in the form `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N` publishes one GitHub Release containing all 10 distributable JARs:
+
+- 1.21.1 Fabric / NeoForge
+- 1.21.11 Fabric / NeoForge
+- 26.1.2 Fabric / NeoForge
+- 26.2 Fabric / NeoForge
+- 26.3 Fabric / NeoForge
+
+Each CI target verifies that its JAR contains loader metadata, the loader entrypoint, the spawn policy, the Mixin configuration and the shared surface-rule implementation.
