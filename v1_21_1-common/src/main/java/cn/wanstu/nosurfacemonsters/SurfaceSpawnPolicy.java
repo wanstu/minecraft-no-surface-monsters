@@ -26,6 +26,11 @@ public final class SurfaceSpawnPolicy {
             return false;
         }
 
+        // A mod may query an unloaded position; never load a chunk just to restrict it.
+        if (!level.hasChunkAt(pos)) {
+            return false;
+        }
+
         // Read existing world data only; block identity does not define a cave.
         // Both queries use the current column's cached height/light data.
         return level.canSeeSky(pos) || SurfaceSpawnRules.isSurface(

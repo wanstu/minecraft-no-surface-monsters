@@ -38,6 +38,7 @@ When the mod game rule is enabled (default):
 - Vanilla, loader and other mods' spawn predicates run before the surface restriction.
 - Only natural spawns in the Overworld monster category are considered, including modded monsters using that category and spawn-check path.
 - Floor blocks, block tags and biome contents are neither rewritten nor whitelisted. Modded cave floors follow the same geometry rule as vanilla floors.
+- An unloaded position is left unchanged; the surface check never requests a chunk load.
 - There are no entity-removal, tick-scan, mob-cap, AI or world-generation hooks.
 - Surface depth is relative to the current column height, including roofs. Deep covered rooms follow the underground rule too.
 - Mods that bypass the normal spawn-check path are outside this hook's scope.
@@ -62,7 +63,7 @@ The project keeps gameplay rules separate from Minecraft-version and loader adap
 
 ## CI and Releases
 
-Every adapter's Gradle check task runs the shared surface-depth regressions without extra test libraries. GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
+Every adapter's Gradle check task runs shared depth-boundary and compiled-hook scope/rejection regressions without extra test libraries or a running world. GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
 
 A release tag in the form `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N` publishes one GitHub Release containing all 10 distributable JARs, then publishes each Minecraft/loader target as a separate Modrinth version.
 
@@ -114,6 +115,7 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 - 原版、Loader 和其他模组的刷怪判定先执行。
 - 只处理主世界、怪物分类、自然生成；使用同一分类与判定路径的模组怪物也适用。
 - 不改方块、方块标签或群系内容，不再维护地面材质白名单，模组洞穴地面按同一位置规则判断。
+- 遇到未加载的位置直接保留原判定，地表检查不会主动加载区块。
 - 不挂接实体删除、逐 tick 扫描、怪物数量上限、AI 或世界生成。
 - 深度以当前列高度为准，屋顶也会计入；足够深的封闭房间同样按地下区域处理。
 - 完全绕过常规刷怪判定的模组生成流程不在这个拦截点的作用范围内。
@@ -138,7 +140,7 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 
 ## CI 与发布
 
-每个适配模块的 Gradle check 都会运行公共地表深度回归检查，不增加测试库依赖。GitHub Actions 会在 Push 和 Pull Request 时自动构建并验证全部 10 个 Minecraft / Loader 目标。
+每个适配模块的 Gradle check 都会运行公共深度边界检查，以及编译后拦截函数的作用范围与拒绝结果回归检查，不增加测试库依赖，也不启动世界。GitHub Actions 会在 Push 和 Pull Request 时自动构建并验证全部 10 个 Minecraft / Loader 目标。
 
 创建 `vMAJOR.MINOR.PATCH` 或 `vMAJOR.MINOR.PATCH-rc.N` 格式的 tag 后，会自动创建包含全部 10 个可发布 JAR 的 GitHub Release，并将每个 Minecraft / Loader 目标作为独立版本发布到 Modrinth。
 

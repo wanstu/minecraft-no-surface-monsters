@@ -11,6 +11,13 @@ tasks.register('surfaceRulesTest', JavaExec) {
     classpath = sourceSets.surfaceRulesTest.runtimeClasspath
     mainClass = 'cn.wanstu.nosurfacemonsters.common.SurfaceSpawnRulesTest'
 }
+// Exercise the compiled hook with real Minecraft/Mixin types, without starting a world.
+// compileClasspath avoids adding a development launcher to this test's runtime dependencies.
+tasks.register('spawnHookContractTest', JavaExec) {
+    dependsOn tasks.named('classes'), tasks.named('surfaceRulesTestClasses')
+    classpath = sourceSets.surfaceRulesTest.output + sourceSets.main.output + sourceSets.main.compileClasspath
+    mainClass = 'cn.wanstu.nosurfacemonsters.common.SpawnHookContractTest'
+}
 tasks.named('check') {
-    dependsOn tasks.named('surfaceRulesTest')
+    dependsOn tasks.named('surfaceRulesTest'), tasks.named('spawnHookContractTest')
 }
