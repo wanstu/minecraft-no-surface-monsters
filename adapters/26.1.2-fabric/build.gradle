@@ -31,3 +31,5 @@ tasks.named('processResources', ProcessResources) {
         expand(version: project.version)
     }
 }
+
+apply from: '../../common/verification.gradle'

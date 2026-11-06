@@ -8,7 +8,7 @@ A lightweight Minecraft mod that prevents ordinary hostile mobs from naturally s
 - Keeps normal hostile mob spawning in caves and underground areas.
 - Does not affect the Nether or the End.
 - Does not affect commands, spawn eggs, mob spawners, trial spawners, raids, or other mechanic-driven spawns.
-- Hooks into Minecraft's existing natural-spawn checks before entity creation.
+- Adds one restriction after Minecraft's existing spawn checks have returned, before entity creation.
 - Does not continuously scan mobs, chunks, or vertical block columns.
 - Does not require Fabric API or another gameplay/configuration mod.
 
@@ -27,11 +27,21 @@ A lightweight Minecraft mod that prevents ordinary hostile mobs from naturally s
 When the mod game rule is enabled (default):
 
 - ordinary hostile natural spawning is blocked in Overworld surface areas;
-- obvious surface or constructed floors are protected immediately;
 - any spawn position that can see the sky is considered surface;
 - positions hidden from the sky are still considered surface until they are at least 8 blocks below the terrain height;
-- only sufficiently deep underground or cave positions on natural underground-compatible blocks keep normal hostile natural spawning;
+- sky-hidden positions at least 8 blocks below the column height keep the original spawn result, regardless of floor material;
 - special mechanic-driven spawns are left to vanilla behavior.
+
+## Compatibility and Scope
+
+- A single return hook only narrows a successful natural-spawn result; a rejected spawn stays rejected.
+- Vanilla, loader and other mods' spawn predicates run before the surface restriction.
+- Only natural spawns in the Overworld monster category are considered, including modded monsters using that category and spawn-check path.
+- Floor blocks, block tags and biome contents are neither rewritten nor whitelisted. Modded cave floors follow the same geometry rule as vanilla floors.
+- An unloaded position is left unchanged; the surface check never requests a chunk load.
+- There are no entity-removal, tick-scan, mob-cap, AI or world-generation hooks.
+- Surface depth is relative to the current column height, including roofs. Deep covered rooms follow the underground rule too.
+- Mods that bypass the normal spawn-check path are outside this hook's scope.
 
 ## Configuration
 
@@ -53,7 +63,7 @@ The project keeps gameplay rules separate from Minecraft-version and loader adap
 
 ## CI and Releases
 
-GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
+Every adapter's Gradle check task runs shared depth-boundary and compiled-hook scope/rejection regressions without extra test libraries or a running world. GitHub Actions builds and verifies all 10 supported Minecraft/loader targets on pushes and pull requests.
 
 A release tag in the form `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N` publishes one GitHub Release containing all 10 distributable JARs, then publishes each Minecraft/loader target as a separate Modrinth version.
 
@@ -75,7 +85,7 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 - 保留洞穴和地下区域中的正常敌对生物生成。
 - 不影响下界和末地。
 - 不影响命令、刷怪蛋、刷怪笼、试炼刷怪笼、袭击以及其他由游戏机制触发的生物生成。
-- 直接接入 Minecraft 原有的自然刷怪判定流程，在实体生成前完成判断。
+- 在 Minecraft 原有刷怪判定返回后追加限制，仍在实体生成前完成判断。
 - 不持续扫描怪物、区块或整条垂直方块列。
 - 不需要 Fabric API，也不依赖额外的玩法或配置模组。
 
@@ -94,11 +104,21 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 模组规则默认启用：
 
 - 普通敌对生物不会在主世界地表自然生成；
-- 明显的地表方块或人工地面会直接被视为地表；
 - 能直接看见天空的位置会被视为地表；
 - 即使看不见天空，只要距离地形表面不足 8 格，仍会被视为地表区域；
-- 只有足够深入地下、位于自然地下兼容方块上的位置，才保留正常的敌对生物自然生成；
+- 看不见天空且距离当前列地表高度至少 8 格的位置，保留原有刷怪判定结果，不再限制地面方块材质；
 - 由原版特殊机制触发的生成保持原版行为。
+
+## 兼容性与影响范围
+
+- 只保留一个刷怪判定返回点的限制：原本不允许的生成仍不允许，只对原本允许的自然生成追加地表检查。
+- 原版、Loader 和其他模组的刷怪判定先执行。
+- 只处理主世界、怪物分类、自然生成；使用同一分类与判定路径的模组怪物也适用。
+- 不改方块、方块标签或群系内容，不再维护地面材质白名单，模组洞穴地面按同一位置规则判断。
+- 遇到未加载的位置直接保留原判定，地表检查不会主动加载区块。
+- 不挂接实体删除、逐 tick 扫描、怪物数量上限、AI 或世界生成。
+- 深度以当前列高度为准，屋顶也会计入；足够深的封闭房间同样按地下区域处理。
+- 完全绕过常规刷怪判定的模组生成流程不在这个拦截点的作用范围内。
 
 ## 配置
 
@@ -120,7 +140,7 @@ No Surface Monsters 是一个轻量级 Minecraft 模组，用于阻止普通敌�
 
 ## CI 与发布
 
-GitHub Actions 会在 Push 和 Pull Request 时自动构建并验证全部 10 个 Minecraft / Loader 目标。
+每个适配模块的 Gradle check 都会运行公共深度边界检查，以及编译后拦截函数的作用范围与拒绝结果回归检查，不增加测试库依赖，也不启动世界。GitHub Actions 会在 Push 和 Pull Request 时自动构建并验证全部 10 个 Minecraft / Loader 目标。
 
 创建 `vMAJOR.MINOR.PATCH` 或 `vMAJOR.MINOR.PATCH-rc.N` 格式的 tag 后，会自动创建包含全部 10 个可发布 JAR 的 GitHub Release，并将每个 Minecraft / Loader 目标作为独立版本发布到 Modrinth。
 

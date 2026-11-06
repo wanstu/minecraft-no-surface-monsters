@@ -20,3 +20,5 @@ tasks.named('processResources', ProcessResources) {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand(version: project.version) }
 }
+
+apply from: '../../common/verification.gradle'

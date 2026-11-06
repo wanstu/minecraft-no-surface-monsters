@@ -1,0 +1,23 @@
+// Run the shared geometry regression checks without adding runtime/test dependencies.
+def sharedCommon = file('common').isDirectory() ? file('common') : file('../../common')
+sourceSets {
+    surfaceRulesTest {
+        java.srcDir new File(sharedCommon, 'src/main/java')
+        java.srcDir new File(sharedCommon, 'src/test/java')
+    }
+}
+tasks.register('surfaceRulesTest', JavaExec) {
+    dependsOn tasks.named('surfaceRulesTestClasses')
+    classpath = sourceSets.surfaceRulesTest.runtimeClasspath
+    mainClass = 'cn.wanstu.nosurfacemonsters.common.SurfaceSpawnRulesTest'
+}
+// Exercise the compiled hook with real Minecraft/Mixin types, without starting a world.
+// compileClasspath avoids adding a development launcher to this test's runtime dependencies.
+tasks.register('spawnHookContractTest', JavaExec) {
+    dependsOn tasks.named('classes'), tasks.named('surfaceRulesTestClasses')
+    classpath = sourceSets.surfaceRulesTest.output + sourceSets.main.output + sourceSets.main.compileClasspath
+    mainClass = 'cn.wanstu.nosurfacemonsters.common.SpawnHookContractTest'
+}
+tasks.named('check') {
+    dependsOn tasks.named('surfaceRulesTest'), tasks.named('spawnHookContractTest')
+}
