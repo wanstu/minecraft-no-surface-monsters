@@ -1,0 +1,16 @@
+// Run the shared geometry regression checks without adding runtime/test dependencies.
+def sharedCommon = file('common').isDirectory() ? file('common') : file('../../common')
+sourceSets {
+    surfaceRulesTest {
+        java.srcDir new File(sharedCommon, 'src/main/java')
+        java.srcDir new File(sharedCommon, 'src/test/java')
+    }
+}
+tasks.register('surfaceRulesTest', JavaExec) {
+    dependsOn tasks.named('surfaceRulesTestClasses')
+    classpath = sourceSets.surfaceRulesTest.runtimeClasspath
+    mainClass = 'cn.wanstu.nosurfacemonsters.common.SurfaceSpawnRulesTest'
+}
+tasks.named('check') {
+    dependsOn tasks.named('surfaceRulesTest')
+}

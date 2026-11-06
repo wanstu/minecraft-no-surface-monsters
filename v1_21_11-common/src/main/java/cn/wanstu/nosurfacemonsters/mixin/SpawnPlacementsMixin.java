@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SpawnPlacements.class)
 public abstract class SpawnPlacementsMixin {
-    @Inject(method = "checkSpawnRules", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "checkSpawnRules", at = @At("RETURN"), cancellable = true)
     private static void nosurfacemonsters$blockNaturalSurfaceSpawn(
         EntityType<?> entityType,
         ServerLevelAccessor level,
@@ -24,6 +24,10 @@ public abstract class SpawnPlacementsMixin {
         RandomSource random,
         CallbackInfoReturnable<Boolean> callback
     ) {
+        // Keep vanilla/loader/mod predicates intact and never turn a denial into approval.
+        if (!callback.getReturnValueZ()) {
+            return;
+        }
         if (spawnReason != EntitySpawnReason.NATURAL) return;
         if (!(level instanceof ServerLevel serverLevel)) return;
         if (SurfaceSpawnPolicy.shouldBlockNaturalMonsterSpawn(serverLevel, entityType.getCategory(), pos)) {
